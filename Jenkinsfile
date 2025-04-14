@@ -3,8 +3,8 @@ pipeline {
 
   environment {
     IMAGE_NAME = "adibowvalley/adicare-hospital"
-    CONTAINER_NAME = "adicare-hospital"
-    EC2_IP = "34.228.65.134"
+    CONTAINER_NAME = "adicare"
+    EC2_IP = "98.84.168.188"
     SSH_CREDENTIALS_ID = "ec2-deploy-key"
   }
 
@@ -43,27 +43,28 @@ pipeline {
       }
     }
 
-    stage('Deploy to EC2') {
-      steps {
-        echo "⚙️ Deploying container to EC2..."
-        script {
-          withCredentials([sshUserPrivateKey(
-            credentialsId: SSH_CREDENTIALS_ID,
-            keyFileVariable: 'KEY',
-            usernameVariable: 'USER'
-          )]) {
-            sh """#!/bin/bash
-              ssh -o StrictHostKeyChecking=no -i $KEY $USER@$EC2_IP <<EOF
-                docker stop ${CONTAINER_NAME} || true
-                docker rm ${CONTAINER_NAME} || true
-                docker pull ${IMAGE_NAME}:latest
-                docker run -d --name ${CONTAINER_NAME} -p 80:80 ${IMAGE_NAME}:latest
-              EOF
-            """
-          }
-        }
+   stage('Deploy to EC2') {
+  steps {
+    echo "⚙️ Deploying container to EC2..."
+    script {
+      withCredentials([sshUserPrivateKey(
+        credentialsId: SSH_CREDENTIALS_ID,
+        keyFileVariable: 'KEY',
+        usernameVariable: 'USER'
+      )]) {
+        sh """#!/bin/bash
+          ssh -o StrictHostKeyChecking=no -i $KEY $USER@$EC2_IP <<EOF
+            docker stop ${CONTAINER_NAME} || true
+            docker rm ${CONTAINER_NAME} || true
+            docker pull ${IMAGE_NAME}:latest
+            docker run -d --name ${CONTAINER_NAME} -p 80:80 ${IMAGE_NAME}:latest
+EOF
+        """
       }
     }
+  }
+}
+
 
     stage('Security Scan with Nmap') {
       steps {
