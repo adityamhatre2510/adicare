@@ -37,34 +37,33 @@ pipeline {
         withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
           sh '''#!/bin/bash
             echo "$PASSWORD" | docker login -u "$USERNAME" --password-stdin
-            docker push ${IMAGE_NAME}:latest
+            docker push adibowvalley/adicare-hospital:latest
           '''
         }
       }
     }
 
-   stage('Deploy to EC2') {
-  steps {
-    echo "⚙️ Deploying container to EC2..."
-    script {
-      withCredentials([sshUserPrivateKey(
-        credentialsId: SSH_CREDENTIALS_ID,
-        keyFileVariable: 'KEY',
-        usernameVariable: 'USER'
-      )]) {
-        sh """#!/bin/bash
-          ssh -o StrictHostKeyChecking=no -i $KEY $USER@$EC2_IP <<EOF
-            docker stop ${CONTAINER_NAME} || true
-            docker rm ${CONTAINER_NAME} || true
-            docker pull ${IMAGE_NAME}:latest
-            docker run -d --name ${CONTAINER_NAME} -p 80:80 ${IMAGE_NAME}:latest
+    stage('Deploy to EC2') {
+      steps {
+        echo "⚙️ Deploying container to EC2..."
+        script {
+          withCredentials([sshUserPrivateKey(
+            credentialsId: SSH_CREDENTIALS_ID,
+            keyFileVariable: 'KEY',
+            usernameVariable: 'USER'
+          )]) {
+            sh '''#!/bin/bash
+              ssh -o StrictHostKeyChecking=no -i "$KEY" "$USER@98.84.168.188" <<EOF
+                docker stop adicare || true
+                docker rm adicare || true
+                docker pull adibowvalley/adicare-hospital:latest
+                docker run -d --name adicare -p 80:80 adibowvalley/adicare-hospital:latest
 EOF
-        """
+            '''
+          }
+        }
       }
     }
-  }
-}
-
 
     stage('Security Scan with Nmap') {
       steps {
