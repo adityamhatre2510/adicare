@@ -2,7 +2,6 @@ pipeline {
   agent any
 
   environment {
-    // Docker and Deployment Settings
     IMAGE_NAME = "adibowvalley/adicare-hospital"
     CONTAINER_NAME = "adicare-hospital"
     EC2_IP = "34.228.65.134"
@@ -36,10 +35,10 @@ pipeline {
       steps {
         echo "🚀 Pushing image to Docker Hub..."
         withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-          sh """
-            echo $PASSWORD | docker login -u $USERNAME --password-stdin
+          sh '''#!/bin/bash
+            echo "$PASSWORD" | docker login -u "$USERNAME" --password-stdin
             docker push ${IMAGE_NAME}:latest
-          """
+          '''
         }
       }
     }
@@ -53,12 +52,13 @@ pipeline {
             keyFileVariable: 'KEY',
             usernameVariable: 'USER'
           )]) {
-            sh """
-              ssh -o StrictHostKeyChecking=no -i $KEY $USER@$EC2_IP '
+            sh """#!/bin/bash
+              ssh -o StrictHostKeyChecking=no -i $KEY $USER@$EC2_IP <<EOF
                 docker stop ${CONTAINER_NAME} || true
                 docker rm ${CONTAINER_NAME} || true
+                docker pull ${IMAGE_NAME}:latest
                 docker run -d --name ${CONTAINER_NAME} -p 80:80 ${IMAGE_NAME}:latest
-              '
+              EOF
             """
           }
         }
