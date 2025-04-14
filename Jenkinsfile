@@ -65,18 +65,32 @@ EOF
       }
     }
 
-    stage('Security Scan with Nmap') {
+    stage('Security Scan with Nmap + Email') {
       steps {
         echo "🔒 Running post-deploy Nmap scan..."
         sh "nmap -A -T4 -p 80 ${EC2_IP} -oN nmap-scan.txt"
         archiveArtifacts artifacts: 'nmap-scan.txt'
+
+        emailext (
+          subject: "📋 Adicare - Nmap Security Scan Report",
+          body: """<p>Hello,</p>
+                   <p>The Nmap security scan for <strong>Adicare Hospital</strong> has completed successfully.</p>
+                   <p><strong>Scan Target:</strong> ${EC2_IP}</p>
+                   <p>The scan results are attached as a text file.</p>
+                   <br/>
+                   <p>Regards,<br/>Jenkins CI/CD Pipeline</p>""",
+          mimeType: 'text/html',
+          attachLog: false,
+          attachmentsPattern: 'nmap-scan.txt',
+          to: 'a.mhatre623@mybvc.ca'
+        )
       }
     }
   }
 
   post {
     success {
-      echo "✅ Build, deploy, and scan completed successfully!"
+      echo "✅ Build, deploy, scan, and email notification completed successfully!"
     }
     failure {
       echo "❌ Pipeline failed. Please check the logs."
